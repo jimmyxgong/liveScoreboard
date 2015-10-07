@@ -1,35 +1,95 @@
+#!/usr/bin/env python
+
+"""liveScore.py: a boxscore of NBA games that updates periodically"""
+
+__author__ = 'Jimmy Gong (jimmyxgong@gmail.com)'
+__copyright__ = 'Copyright (c) 2015 Jimmy Gong'
+
 import requests
 import bs4
 import time
 import sys
 import re
+import os
 
 def getUrl():
+	"""
+	Webscrape and initiate BeautifulSoup module
+
+	Returns:
+		Returns a BeautifulSoup object 
+	"""
 	mainUrl = 'http://www.cbssports.com/nba/scoreboard'
-	#mainUrl = 'http://www.cbssports.com/nba/scoreboard/20141104'
 	res = requests.get(mainUrl)
 	soup = bs4.BeautifulSoup(res.text, 'html.parser')
 	return soup
 
 def getAwayTeam(bSoup):
+	"""
+	Create a list of away NBA teams
+
+	Parameters:
+		bSoup: BeautifulSoup object for webscraping
+
+	Returns:
+		returns a list of NBA away teams
+	"""
 	elem = bSoup.select('tr.teamInfo.awayTeam > td.teamName > div > a')
 	return elem	
 
 def getHomeTeam(bSoup):
+	"""
+	Create a list of home NBA teams
+
+	Parameters:
+		bSoup: BeautifulSoup object for webscraping
+
+	Returns:
+		returns a list of NBA home teams
+	"""
 	elem = bSoup.select('tr.teamInfo.homeTeam > td.teamName > div > a')
 	return elem
 
-def getScores(bSoup):
-	for scores in bSoup.find_all("td" , {"class" : "finalScore"}):
-		print scores.next
-	
-	
-
 def getGameTime(bSoup):
-	elem = bSoup.select('tr.gameInfo > td > span > span')
-	return elem
+	"""
+	Creates a list of the current status of an NBA game
+
+	Parameters:
+		bSoup: BeautifulSoup object for webscraping
+
+	Returns:
+		returns a list of current game status 
+	"""
+	elem = bSoup.findAll( attrs={"class" : "nbaBoxScore"} )
+	gameTimeBox = [None]*len(elem)
+	i = 0
+	
+	for game in elem:
+		currTime = game.find( atts={"class" : "gameStatus"})
+		if currTime == None:
+			preGame = game.find( attrs={"class" : "gameDate"} )
+			if preGame == None:
+				final = game.find( attrs={"class" : "finalStatus"} )
+				gameTimeBox[i] = final.text
+			else:
+				gameTimeBox[i] = preGame.text
+		else:
+			gameTimeBox[i] = currTime.text
+
+		i=i+1
+
+	return gameTimeBox
 
 def getNumScorebox(bSoup):
+	"""
+	Creates a list of the current NBA game scores
+
+	Parameters:
+		bSoup: BeautifulSoup object for webscraping
+
+	Returns:
+		returns a list of scores corresponding to each NBA team's current score
+	"""
 	elem = bSoup.findAll( attrs={"class" : "nbaBoxScore"} )
 	scoreBox = [None]*len(elem)*2
 	i = 0
@@ -45,6 +105,12 @@ def getNumScorebox(bSoup):
 
 	return scoreBox
 
+def clear():
+	"""
+	Clears the terminal page
+	"""
+	os.system('clear')
+
 #Start of main program driver
 
 parsedHtml = getUrl()
@@ -54,10 +120,9 @@ awayTeam = getAwayTeam(parsedHtml)
 homeTeam = getHomeTeam(parsedHtml)
 
 gameTime = getGameTime(parsedHtml)
-scores = getNumScorebox(parsedHtml)
 
-#Getting scores of the current date's games
-#getScores(parsedHtml)
+#Getting score boxes
+scores = getNumScorebox(parsedHtml)
 
 
 while True:
@@ -67,26 +132,19 @@ while True:
 		time.sleep(1)
 		sys.stdout.write('.')
 		sys.stdout.flush()
-		
-	sys.stderr.write("\x1b[2J\x1b[H")
 
-	#clears the terminal page with ANSI escape characters
+	#clears the terminal page 
+	clear()
 	
+	#main boxscore driver
 	for i in range(len(awayTeam)):
 		num = str(i+1)
 		if i == 0:
 			print '--------------'
-
-		if len(scores) != 0:
-			print 'Game ' + num + ': '
-			print awayTeam[i].text + ': ' + str(scores[i*2])
-			print homeTeam[i].text + ': ' + str(scores[(i*2)+1])
-			print '--------------'
-		else:
-			print 'Game ' + num + ': '
-			print awayTeam[i].text + ': '
-			print homeTeam[i].text + ': '
-			print 'Game starts at: ' + gameTime[i].text
-			print '--------------'			 
-
+		print 'Game ' + num + ': '
+		print awayTeam[i].text + ': ' + str(scores[i*2])
+		print homeTeam[i].text + ': ' + str(scores[(i*2)+1])
+		print 'Game status: ' + gameTime[i]
+		print '--------------'		
+		
 	
