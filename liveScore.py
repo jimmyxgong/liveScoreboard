@@ -64,13 +64,17 @@ def getGameTime(bSoup):
 	gameTimeBox = [None]*len(elem)
 	i = 0
 	
+
 	for game in elem:
 		currTime = game.find( atts={"class" : "gameStatus"})
 		if currTime == None:
 			preGame = game.find( attrs={"class" : "gameDate"} )
 			if preGame == None:
 				final = game.find( attrs={"class" : "finalStatus"} )
-				gameTimeBox[i] = final.text
+				if final == None:
+					gameTimeBox[i] = 'live'
+				else:
+					gameTimeBox[i] =  final.text
 			else:
 				gameTimeBox[i] = preGame.text
 		else:
@@ -113,19 +117,17 @@ def clear():
 
 #Start of main program driver
 
-parsedHtml = getUrl()
-
-#Getting names of the various nba teams
-awayTeam = getAwayTeam(parsedHtml)
-homeTeam = getHomeTeam(parsedHtml)
-
-gameTime = getGameTime(parsedHtml)
-
-#Getting score boxes
-scores = getNumScorebox(parsedHtml)
-
-
 while True:
+	parsedHtml = getUrl()
+
+	#Getting names of the various nba teams
+	awayTeam = getAwayTeam(parsedHtml)
+	homeTeam = getHomeTeam(parsedHtml)
+
+	gameTime = getGameTime(parsedHtml)
+
+	#Getting score boxes
+	scores = getNumScorebox(parsedHtml)
 	#delay between score updates 
 	sys.stdout.write('Updating')
 	for i in range(0,5):
@@ -144,7 +146,8 @@ while True:
 		print 'Game ' + num + ': '
 		print awayTeam[i].text + ': ' + str(scores[i*2])
 		print homeTeam[i].text + ': ' + str(scores[(i*2)+1])
-		print 'Game status: ' + gameTime[i]
-		print '--------------'		
+		print 'Game status: ' + str(gameTime[i])
+		print '--------------'
+		
 		
 	
